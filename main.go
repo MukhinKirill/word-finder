@@ -15,10 +15,17 @@ import (
 func main() {
 
 	argsWithoutProg := os.Args[1:]
-
-	folderPath := os.Args[1]
-	wordForFind := strings.ToLower(os.Args[2])
-	fileCharset := strings.ToLower(os.Args[3])
+	if len(argsWithoutProg) < 2 {
+		fmt.Println("Не указанны все обязательные аргументы при запуске утилиты.")
+		fmt.Println("Пример: word-finder.exe Path(обязательный) word(обязательный) charset(дополнительный)")
+		os.Exit(1)
+	}
+	folderPath := argsWithoutProg[0]
+	wordForFind := strings.ToLower(argsWithoutProg[1])
+	fileCharset := "utf-8"
+	if len(argsWithoutProg) > 2 {
+		fileCharset = strings.ToLower(argsWithoutProg[2])
+	}
 
 	fmt.Println(argsWithoutProg)
 	fmt.Println("Search word:", wordForFind)
