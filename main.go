@@ -26,6 +26,10 @@ func main() {
 		fileCharset = strings.ToLower(argsWithoutProg[2])
 	}
 
+	if folderPath[len(folderPath)-1] != '\\' {
+		folderPath = folderPath + "\\"
+	}
+
 	fmt.Println(argsWithoutProg)
 	fmt.Println("Search word:", wordForFind)
 
@@ -34,11 +38,9 @@ func main() {
 
 	var ch = make(chan int, len(files))
 	for _, f := range files {
+
 		go func(fi os.FileInfo, ch chan<- int) {
 			if fi.Mode().IsRegular() {
-				if folderPath[len(folderPath)-1] != '\\' {
-					folderPath = folderPath + "\\"
-				}
 				filePath := folderPath + fi.Name()
 				wordCount := findWordInFile(filePath, fileCharset, wordForFind)
 				fmt.Println(fi.Name(), wordCount)
@@ -50,6 +52,7 @@ func main() {
 	for i := 0; i < len(files); i++ {
 		wordCounter += <-ch
 	}
+	close(ch)
 	elapsed := time.Since(start)
 	fmt.Printf("\nКоличество найденных слов во всех файлах: %d", wordCounter)
 	fmt.Printf("\nЗатраченное время %s", elapsed)
@@ -74,21 +77,21 @@ func findWordInFile(filePath string, fileCharset string, searchedWord string) in
 	reader := strings.NewReader(text)
 
 	contentType := fmt.Sprint("text/html; charset = ", fileCharset)
-	utf8, err := charset.NewReader(reader, contentType)
+	utf8Reader, err := charset.NewReader(reader, contentType)
 	if err != nil {
 		fmt.Println("Encoding error:", err)
 		return -1
 	}
 
-	utf8Bytes, err := ioutil.ReadAll(utf8)
+	utf8Bytes, err := ioutil.ReadAll(utf8Reader)
 	if err != nil {
 		fmt.Println("IO error:", err)
 		return -1
 	}
 
-	textUtf8 := string(utf8Bytes)
+	utf8Text := string(utf8Bytes)
 	wordCounter := 0
-	words := strings.Fields(textUtf8)
+	words := strings.Fields(utf8Text)
 	for _, word := range words {
 		if strings.ToLower(word) == searchedWord {
 			wordCounter++
