@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"golang.org/x/net/html/charset"
@@ -31,14 +30,11 @@ func main() {
 	fmt.Println("Search word:", wordForFind)
 
 	files := getAllfiles(folderPath)
-	commonWordCounter := 0
 	start := time.Now()
 
-	var wg sync.WaitGroup
+	var ch = make(chan int, len(files))
 	for _, f := range files {
-		wg.Add(1)
-		go func(fi os.FileInfo) {
-			defer wg.Done()
+		go func(fi os.FileInfo, ch chan<- int) {
 			if fi.Mode().IsRegular() {
 				if folderPath[len(folderPath)-1] != '\\' {
 					folderPath = folderPath + "\\"
@@ -46,14 +42,16 @@ func main() {
 				filePath := folderPath + fi.Name()
 				wordCount := findWordInFile(filePath, fileCharset, wordForFind)
 				fmt.Println(fi.Name(), wordCount)
-				commonWordCounter += wordCount
+				ch <- wordCount
 			}
-		}(f)
+		}(f, ch)
 	}
-	wg.Wait()
-
+	wordCounter := 0
+	for i := 0; i < len(files); i++ {
+		wordCounter += <-ch
+	}
 	elapsed := time.Since(start)
-	fmt.Printf("\nКоличество найденных слов во всех файлах: %d", commonWordCounter)
+	fmt.Printf("\nКоличество найденных слов во всех файлах: %d", wordCounter)
 	fmt.Printf("\nЗатраченное время %s", elapsed)
 }
 
